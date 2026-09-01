@@ -1,0 +1,51 @@
+{
+  "title": "Solar Panel Insights",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Solar Panel Insights",
+        "description": "Configure your solar panel array to calculate detailed solar panel metrics.",
+        "data": {
+          "panel_height": "Panel height (mm)",
+          "panel_width": "Panel width (mm)",
+          "panel_amount": "Amount of panels",
+          "panel_tilt": "Panel tilt (°)",
+          "panel_azimuth": "Panel azimuth (°)",
+          "efficiency_percentage": "Efficiency (%)",
+          "max_power": "Maximum power per panel (Wp)",
+          "input_power_entity": "Input power sensor"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update Solar Panel Insights settings",
+        "data": {
+          "panel_height": "Panel height (mm)",
+          "panel_width": "Panel width (mm)",
+          "panel_amount": "Amount of panels",
+          "panel_tilt": "Panel tilt (°)",
+          "panel_azimuth": "Panel azimuth (°)",
+          "efficiency_percentage": "Efficiency (%)",
+          "max_power": "Maximum power per panel (Wp)",
+          "input_power_entity": "Input power sensor"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "incidence_angle": {
+        "name": "Incidence angle"
+      },
+      "absolute_irradiation": {
+        "name": "Absolute irradiation"
+      },
+      "relative_irradiation": {
+        "name": "Relative irradiation"
+      }
+    }
+  }
+}
