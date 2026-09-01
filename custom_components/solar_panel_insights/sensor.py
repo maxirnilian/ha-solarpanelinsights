@@ -9,8 +9,11 @@ from typing import Any
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
+
+from . import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,11 +45,18 @@ async def async_setup_entry(
 class BasePanelSensor(SensorEntity):
     """Base class for solar panel sensors."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         self.hass = hass
         self.config_entry = config_entry
         self._attr_native_value = None
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, config_entry.entry_id)},
+            name=config_entry.title,
+            manufacturer="Solar Panel Insights",
+        )
 
         self._panel_height = _get_config_value(config_entry, "panel_height", 0)
         self._panel_width = _get_config_value(config_entry, "panel_width", 0)

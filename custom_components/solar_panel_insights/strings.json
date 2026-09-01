@@ -1,4 +1,5 @@
 {
+  "title": "Solar Panel Insights",
   "config": {
     "step": {
       "user": {
@@ -31,6 +32,19 @@
           "max_power": "Maximum power per panel (Wp)",
           "input_power_entity": "Input power sensor"
         }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "incidence_angle": {
+        "name": "Incidence angle"
+      },
+      "absolute_irradiation": {
+        "name": "Absolute irradiation"
+      },
+      "relative_irradiation": {
+        "name": "Relative irradiation"
       }
     }
   }
