@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Set up Solar Panel Insights",
-        "description": "Configure your solar panel array to calculate the solar incidence angle.",
+        "description": "Configure your solar panel array to calculate detailed solar panel metrics.",
         "data": {
           "panel_height": "Panel height (mm)",
           "panel_width": "Panel width (mm)",
