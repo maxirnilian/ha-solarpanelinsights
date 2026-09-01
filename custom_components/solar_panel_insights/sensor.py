@@ -8,17 +8,20 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_state_change_event
 
 _LOGGER = logging.getLogger(__name__)
 
+SUN_ENTITY = "sun.sun"
+
 
 def _get_config_value(config_entry: ConfigEntry, key: str, default: Any) -> Any:
-    """Return a value from data with fallback to options."""
-    if key in config_entry.data:
-        return config_entry.data[key]
-    return config_entry.options.get(key, default)
+    """Return a value from options with fallback to data."""
+    if key in config_entry.options:
+        return config_entry.options[key]
+    return config_entry.data.get(key, default)
 
 
 async def async_setup_entry(
@@ -57,8 +60,27 @@ class BasePanelSensor(SensorEntity):
         self._input_power_entity = _get_config_value(
             config_entry, "input_power_entity", None
         )
-        self._sun_elevation_entity = "sensor.sun_solar_elevation"
-        self._sun_azimuth_entity = "sensor.sun_solar_azimuth"
+
+    async def async_added_to_hass(self) -> None:
+        """Update when sun or input power changes."""
+        await super().async_added_to_hass()
+
+        tracked_entities = [SUN_ENTITY]
+        if self._input_power_entity:
+            tracked_entities.append(self._input_power_entity)
+
+        @callback
+        def handle_state_change(_event) -> None:
+            self._update_state()
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            async_track_state_change_event(self.hass, tracked_entities, handle_state_change)
+        )
+        self._update_state()
+
+    def _update_state(self) -> None:
+        """Update the sensor value."""
 
     @property
     def panel_area_m2(self) -> float:
@@ -76,19 +98,16 @@ class BasePanelSensor(SensorEntity):
 
     def _sun_states(self) -> tuple[float, float] | None:
         """Return sun elevation and azimuth in degrees."""
-        sun_elevation_state = self.hass.states.get(self._sun_elevation_entity)
-        sun_azimuth_state = self.hass.states.get(self._sun_azimuth_entity)
-
-        if not sun_elevation_state or not sun_azimuth_state:
+        sun_state = self.hass.states.get(SUN_ENTITY)
+        if not sun_state or sun_state.state in ("unknown", "unavailable"):
             return None
 
-        if sun_elevation_state.state in (
-            "unknown",
-            "unavailable",
-        ) or sun_azimuth_state.state in ("unknown", "unavailable"):
+        elevation = sun_state.attributes.get("elevation")
+        azimuth = sun_state.attributes.get("azimuth")
+        if elevation is None or azimuth is None:
             return None
 
-        return float(sun_elevation_state.state), float(sun_azimuth_state.state)
+        return float(elevation), float(azimuth)
 
     def cos_theta(self) -> float | None:
         """Return cosine of the angle between sun direction and panel normal."""
@@ -194,7 +213,7 @@ class IncidenceAngleSensor(BasePanelSensor):
         self._attr_unique_id = f"{config_entry.entry_id}_incidence_angle"
         self._attr_native_unit_of_measurement = "°"
 
-    async def async_update(self) -> None:
+    def _update_state(self) -> None:
         """Fetch new state data for the sensor."""
         try:
             self._attr_native_value = self.incidence_angle()
@@ -213,7 +232,7 @@ class AbsoluteIrradianceSensor(BasePanelSensor):
         self._attr_device_class = SensorDeviceClass.IRRADIANCE
         self._attr_native_unit_of_measurement = "W/m²"
 
-    async def async_update(self) -> None:
+    def _update_state(self) -> None:
         """Fetch new state data for the sensor."""
         try:
             self._attr_native_value = self.absolute_irradiance()
@@ -231,7 +250,7 @@ class RelativeIrradianceSensor(BasePanelSensor):
         self._attr_unique_id = f"{config_entry.entry_id}_relative_irradiation"
         self._attr_native_unit_of_measurement = "%"
 
-    async def async_update(self) -> None:
+    def _update_state(self) -> None:
         """Fetch new state data for the sensor."""
         try:
             self._attr_native_value = self.relative_irradiance()

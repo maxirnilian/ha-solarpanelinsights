@@ -7,7 +7,7 @@ Home Assistant custom integration that calculates detailed solar panel metrics u
 - Calculates the angle between incoming sunlight and your panel surface
 - Estimates absolute plane-of-array irradiation from measured power
 - Estimates relative irradiation vs clear-sky potential at the current sun angle
-- Uses `sensor.sun_solar_elevation` and `sensor.sun_solar_azimuth` from the sun integration
+- Uses elevation and azimuth from the built-in `sun.sun` entity
 - Configurable panel dimensions, tilt, azimuth, efficiency, and linked power sensor
 
 ## Installation
