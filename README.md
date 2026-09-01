@@ -16,7 +16,7 @@ Home Assistant custom integration that calculates detailed solar panel metrics u
 
 1. Open **HACS** → **Integrations**
 2. Click the three-dot menu → **Custom repositories**
-3. Add `https://github.com/maximilian/ha-solarplus` with category **Integration**
+3. Add `https://github.com/maxirnilian/ha-solarpanelinsights` with category **Integration**
 4. Search for **Solar Panel Insights**, install, and restart Home Assistant
 
 ### Manual
