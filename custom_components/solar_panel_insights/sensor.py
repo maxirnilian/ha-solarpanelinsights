@@ -18,6 +18,9 @@ from . import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 SUN_ENTITY = "sun.sun"
+# Diffuse share of clear-sky potential so relative irradiance stays bounded
+# when beam geometry (cos θ) approaches zero at sunrise/sunset.
+DIFFUSE_FRACTION = 0.1
 
 
 def _get_config_value(config_entry: ConfigEntry, key: str, default: Any) -> Any:
@@ -119,8 +122,8 @@ class BasePanelSensor(SensorEntity):
 
         return float(elevation), float(azimuth)
 
-    def cos_theta(self) -> float | None:
-        """Return cosine of the angle between sun direction and panel normal."""
+    def _raw_cos_theta(self) -> float | None:
+        """Return unclamped cos of the angle between sun and panel normal."""
         sun_states = self._sun_states()
         if sun_states is None:
             return None
@@ -131,39 +134,45 @@ class BasePanelSensor(SensorEntity):
         panel_tilt_rad = math.radians(self._panel_tilt)
         panel_azimuth_rad = math.radians(self._panel_azimuth)
 
-        cos_theta = (
+        return (
             math.sin(sun_elevation_rad) * math.cos(panel_tilt_rad)
             + math.cos(sun_elevation_rad)
             * math.sin(panel_tilt_rad)
             * math.cos(sun_azimuth_rad - panel_azimuth_rad)
         )
 
-        return max(0.0, cos_theta)
+    def cos_theta(self) -> float | None:
+        """Return beam geometry factor, clamped to [0, 1] for irradiance math."""
+        cos_theta = self._raw_cos_theta()
+        if cos_theta is None:
+            return None
+        return max(0.0, min(1.0, cos_theta))
+
+    def _aoi_normal_deg(self) -> float | None:
+        """Return angle of incidence from the panel normal in degrees."""
+        cos_theta = self._raw_cos_theta()
+        if cos_theta is None:
+            return None
+        cos_theta = max(-1.0, min(1.0, cos_theta))
+        return math.degrees(math.acos(cos_theta))
+
+    def effective_geometry(self) -> float | None:
+        """Return beam+diffuse geometry factor for relative clear-sky potential.
+
+        Softens near-zero cos θ so relative irradiance stays bounded at
+        grazing angles. Returns None when the sun is behind the panel.
+        """
+        cos_theta = self.cos_theta()
+        if cos_theta is None or cos_theta <= 0:
+            return None
+        return (1.0 - DIFFUSE_FRACTION) * cos_theta + DIFFUSE_FRACTION
 
     def incidence_angle(self) -> float | None:
-        """Calculate the solar incidence angle on the panel."""
-        sun_states = self._sun_states()
-        if sun_states is None:
+        """Return surface incidence angle (90° − AOI from normal)."""
+        aoi = self._aoi_normal_deg()
+        if aoi is None:
             return None
-
-        sun_elevation, sun_azimuth = sun_states
-        sun_elevation_rad = math.radians(sun_elevation)
-        sun_azimuth_rad = math.radians(sun_azimuth)
-        panel_tilt_rad = math.radians(self._panel_tilt)
-        panel_azimuth_rad = math.radians(self._panel_azimuth)
-
-        cos_theta = (
-            math.sin(sun_elevation_rad) * math.cos(panel_tilt_rad)
-            + math.cos(sun_elevation_rad)
-            * math.sin(panel_tilt_rad)
-            * math.cos(sun_azimuth_rad - panel_azimuth_rad)
-        )
-        cos_theta = max(-1.0, min(1.0, cos_theta))
-
-        theta_rad = math.acos(cos_theta)
-        theta_deg = 90 - math.degrees(theta_rad)
-
-        return round(theta_deg, 2)
+        return round(90.0 - aoi, 2)
 
     def input_power(self) -> float | None:
         """Return the current input power of the linked entity."""
@@ -202,11 +211,11 @@ class BasePanelSensor(SensorEntity):
         if power is None:
             return None
 
-        cos_theta_value = self.cos_theta()
-        if cos_theta_value is None or cos_theta_value <= 0:
+        geometry = self.effective_geometry()
+        if geometry is None:
             return None
 
-        potential_power = self.rated_power_w * cos_theta_value
+        potential_power = self.rated_power_w * geometry
         if potential_power <= 0:
             return None
 
