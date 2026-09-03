@@ -43,8 +43,8 @@
       "absolute_irradiation": {
         "name": "Absolute irradiance"
       },
-      "relative_irradiation": {
-        "name": "Relative irradiance (normalized)"
+      "incident_normalized_irradiance": {
+        "name": "Incident-normalized irradiance"
       }
     }
   }

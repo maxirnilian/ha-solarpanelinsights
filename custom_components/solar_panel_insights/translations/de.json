@@ -43,8 +43,8 @@
       "absolute_irradiation": {
         "name": "Absolute Bestrahlungsstärke"
       },
-      "relative_irradiation": {
-        "name": "Relative Bestrahlungsstärke (normalisiert)"
+      "incident_normalized_irradiance": {
+        "name": "Einfallsnormierte Bestrahlungsstärke"
       }
     }
   }

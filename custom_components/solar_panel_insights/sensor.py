@@ -18,7 +18,7 @@ from . import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 SUN_ENTITY = "sun.sun"
-# Diffuse share of clear-sky potential so relative irradiance stays bounded
+# Diffuse share of clear-sky potential so incident-normalized irradiance stays bounded
 # when beam geometry (cos θ) approaches zero at sunrise/sunset.
 DIFFUSE_FRACTION = 0.115
 
@@ -40,7 +40,7 @@ async def async_setup_entry(
         [
             IncidenceAngleSensor(hass, config_entry),
             AbsoluteIrradianceSensor(hass, config_entry),
-            RelativeIrradianceSensor(hass, config_entry),
+            IncidentNormalizedIrradianceSensor(hass, config_entry),
         ]
     )
 
@@ -157,9 +157,9 @@ class BasePanelSensor(SensorEntity):
         return math.degrees(math.acos(cos_theta))
 
     def effective_geometry(self) -> float | None:
-        """Return beam+diffuse geometry factor for relative clear-sky potential.
+        """Return beam+diffuse geometry factor for incident-normalized irradiance.
 
-        Uses front-side beam plus isotropic sky view, normalized so on-normal
+        Uses front-side beam plus isotropic sky view, scaled so on-normal
         geometry stays 1. Softens near-zero / behind-panel beam while the sun
         is up. Returns None when the sun is below the horizon.
         """
@@ -229,8 +229,8 @@ class BasePanelSensor(SensorEntity):
 
         return round(power / (area * efficiency), 1)
 
-    def relative_irradiance(self) -> float | None:
-        """Return irradiance relative to clear-sky potential at current sun angle."""
+    def incident_normalized_irradiance(self) -> float | None:
+        """Return irradiance normalized for incidence angle (ideal-beam equivalent)."""
         power = self.input_power()
         if power is None:
             return None
@@ -283,19 +283,21 @@ class AbsoluteIrradianceSensor(BasePanelSensor):
             _LOGGER.error("Error updating %s: %s", self.name, err)
 
 
-class RelativeIrradianceSensor(BasePanelSensor):
-    """Sensor for relative solar irradiation vs clear-sky potential."""
+class IncidentNormalizedIrradianceSensor(BasePanelSensor):
+    """Sensor for incidence-angle-normalized irradiance (ideal-beam equivalent)."""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-        """Initialize the relative irradiance sensor."""
+        """Initialize the incident-normalized irradiance sensor."""
         super().__init__(hass, config_entry)
-        self._attr_translation_key = "relative_irradiation"
-        self._attr_unique_id = f"{config_entry.entry_id}_relative_irradiation"
+        self._attr_translation_key = "incident_normalized_irradiance"
+        self._attr_unique_id = (
+            f"{config_entry.entry_id}_incident_normalized_irradiance"
+        )
         self._attr_native_unit_of_measurement = "%"
 
     def _update_state(self) -> None:
         """Fetch new state data for the sensor."""
         try:
-            self._attr_native_value = self.relative_irradiance()
+            self._attr_native_value = self.incident_normalized_irradiance()
         except Exception as err:
             _LOGGER.error("Error updating %s: %s", self.name, err)

@@ -8,7 +8,7 @@ Home Assistant custom integration that calculates detailed solar panel metrics u
 
 - Calculates the angle between incoming sunlight and your panel surface
 - Estimates absolute plane-of-array irradiation from measured power
-- Estimates relative irradiation vs clear-sky potential using beam plus isotropic sky view
+- Estimates incident-normalized irradiance (ideal-beam equivalent) using beam plus isotropic sky view
 - Uses elevation and azimuth from the built-in `sun.sun` entity
 - Configurable panel dimensions, tilt, azimuth, efficiency, and linked power sensor
 
@@ -47,13 +47,13 @@ Settings can be updated later via **Configure** on the integration entry.
 | Entity | Unit | Description |
 | --- | --- | --- |
 | Incidence angle | ° | Angle between the sun ray and the panel surface (0° = grazing, 90° = perpendicular) |
-| Absolute irradiation | W/m² | Effective plane-of-array irradiance implied by measured power |
-| Relative irradiation | % | Measured power vs rated power scaled by beam+isotropic-sky geometry |
+| Absolute irradiance | W/m² | Effective plane-of-array irradiance implied by measured power |
+| Incident-normalized irradiance | % | Measured power vs rated power with incidence angle compensated (ideal-beam equivalent) |
 
 ### Calculations
 
-- **Absolute irradiation:** `P / (A × η)` where `P` is input power (W), `A` is total panel area (m²), and `η` is module efficiency
-- **Relative irradiation:** `(P / (P_rated × f)) × 100` where `P_rated` is total rated power (Wp) and
+- **Absolute irradiance:** `P / (A × η)` where `P` is input power (W), `A` is total panel area (m²), and `η` is module efficiency
+- **Incident-normalized irradiance:** `(P / (P_rated × f)) × 100` where `P_rated` is total rated power (Wp) and
 
 ```text
 beam = max(0, cos θ)
@@ -61,13 +61,13 @@ F_sky = (1 + cos β) / 2
 f = [ (1 − k_d) × beam + k_d × F_sky ] / [ (1 − k_d) + k_d × F_sky ]
 ```
 
-with `k_d = 0.115`. `β` is panel tilt. `F_sky` is the isotropic sky view factor (flat ≈ 1, vertical ≈ 0.5). Normalization keeps midday (`cos θ = 1`) at full `P_rated`. When the sun is up but behind the panel (`cos θ < 0`), beam is zero and relative uses the diffuse sky term only.
+with `k_d = 0.115`. `β` is panel tilt. `F_sky` is the isotropic sky view factor (flat ≈ 1, vertical ≈ 0.5). Dividing by `f` removes incidence-angle losses so midday (`cos θ = 1`) maps to full `P_rated`. When the sun is up but behind the panel (`cos θ < 0`), beam is zero and only the diffuse sky term remains.
 
 `cos θ` is the sun-to-panel-normal geometry factor.
 
 - **Incidence angle:** `90° − acos(cos θ)` — the angle between the sun ray and the panel surface, not the panel normal.
 
-The incidence angle and relative irradiation sensors are unavailable when the sun is below the horizon (elevation ≤ 0). Absolute irradiation is unavailable when the sun is behind the panel (`cos θ ≤ 0`) or required inputs are missing.
+The incidence angle and incident-normalized irradiance sensors are unavailable when the sun is below the horizon (elevation ≤ 0). Absolute irradiance is unavailable when the sun is behind the panel (`cos θ ≤ 0`) or required inputs are missing.
 
 ## Requirements
 
