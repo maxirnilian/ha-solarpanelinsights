@@ -20,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 SUN_ENTITY = "sun.sun"
 # Diffuse share of clear-sky potential so relative irradiance stays bounded
 # when beam geometry (cos θ) approaches zero at sunrise/sunset.
-DIFFUSE_FRACTION = 0.1
+DIFFUSE_FRACTION = 0.115
 
 
 def _get_config_value(config_entry: ConfigEntry, key: str, default: Any) -> Any:
@@ -159,13 +159,29 @@ class BasePanelSensor(SensorEntity):
     def effective_geometry(self) -> float | None:
         """Return beam+diffuse geometry factor for relative clear-sky potential.
 
-        Softens near-zero cos θ so relative irradiance stays bounded at
-        grazing angles. Returns None when the sun is behind the panel.
+        Uses front-side beam plus isotropic sky view, normalized so on-normal
+        geometry stays 1. Softens near-zero / behind-panel beam while the sun
+        is up. Returns None when the sun is below the horizon.
         """
-        cos_theta = self.cos_theta()
-        if cos_theta is None or cos_theta <= 0:
+        sun_states = self._sun_states()
+        if sun_states is None:
             return None
-        return (1.0 - DIFFUSE_FRACTION) * cos_theta + DIFFUSE_FRACTION
+
+        sun_elevation, _sun_azimuth = sun_states
+        if sun_elevation <= 0:
+            return None
+
+        cos_theta = self._raw_cos_theta()
+        if cos_theta is None:
+            return None
+
+        beam = max(0.0, cos_theta)
+        f_sky = (1.0 + math.cos(math.radians(self._panel_tilt))) / 2.0
+        numerator = (1.0 - DIFFUSE_FRACTION) * beam + DIFFUSE_FRACTION * f_sky
+        denominator = (1.0 - DIFFUSE_FRACTION) + DIFFUSE_FRACTION * f_sky
+        if denominator <= 0:
+            return None
+        return numerator / denominator
 
     def incidence_angle(self) -> float | None:
         """Return surface incidence angle (90° − AOI from normal)."""

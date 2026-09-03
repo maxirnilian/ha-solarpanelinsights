@@ -8,7 +8,7 @@ Home Assistant custom integration that calculates detailed solar panel metrics u
 
 - Calculates the angle between incoming sunlight and your panel surface
 - Estimates absolute plane-of-array irradiation from measured power
-- Estimates relative irradiation vs clear-sky potential using a beam+diffuse geometry factor
+- Estimates relative irradiation vs clear-sky potential using beam plus isotropic sky view
 - Uses elevation and azimuth from the built-in `sun.sun` entity
 - Configurable panel dimensions, tilt, azimuth, efficiency, and linked power sensor
 
@@ -48,18 +48,26 @@ Settings can be updated later via **Configure** on the integration entry.
 | --- | --- | --- |
 | Incidence angle | ° | Angle between the sun ray and the panel surface (0° = grazing, 90° = perpendicular) |
 | Absolute irradiation | W/m² | Effective plane-of-array irradiance implied by measured power |
-| Relative irradiation | % | Measured power vs rated power scaled by beam+diffuse geometry |
+| Relative irradiation | % | Measured power vs rated power scaled by beam+isotropic-sky geometry |
 
 ### Calculations
 
 - **Absolute irradiation:** `P / (A × η)` where `P` is input power (W), `A` is total panel area (m²), and `η` is module efficiency
-- **Relative irradiation:** `(P / (P_rated × f)) × 100` where `P_rated` is total rated power (Wp) and `f = (1 − k_d) × max(0, cos θ) + k_d` with `k_d = 0.1`
+- **Relative irradiation:** `(P / (P_rated × f)) × 100` where `P_rated` is total rated power (Wp) and
 
-`cos θ` is the sun-to-panel-normal geometry factor. `k_d` approximates diffuse sky contribution so morning values stay bounded when beam geometry is near zero; at midday (`cos θ = 1`) the comparison is still against full `P_rated`.
+```text
+beam = max(0, cos θ)
+F_sky = (1 + cos β) / 2
+f = [ (1 − k_d) × beam + k_d × F_sky ] / [ (1 − k_d) + k_d × F_sky ]
+```
+
+with `k_d = 0.115`. `β` is panel tilt. `F_sky` is the isotropic sky view factor (flat ≈ 1, vertical ≈ 0.5). Normalization keeps midday (`cos θ = 1`) at full `P_rated`. When the sun is up but behind the panel (`cos θ < 0`), beam is zero and relative uses the diffuse sky term only.
+
+`cos θ` is the sun-to-panel-normal geometry factor.
 
 - **Incidence angle:** `90° − acos(cos θ)` — the angle between the sun ray and the panel surface, not the panel normal.
 
-The incidence angle sensor is unavailable when the sun is below the horizon (elevation ≤ 0). Both irradiation sensors are unavailable when the sun is behind the panel (`cos θ ≤ 0`) or required inputs are missing.
+The incidence angle and relative irradiation sensors are unavailable when the sun is below the horizon (elevation ≤ 0). Absolute irradiation is unavailable when the sun is behind the panel (`cos θ ≤ 0`) or required inputs are missing.
 
 ## Requirements
 
