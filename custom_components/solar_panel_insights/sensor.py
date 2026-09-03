@@ -169,6 +169,14 @@ class BasePanelSensor(SensorEntity):
 
     def incidence_angle(self) -> float | None:
         """Return surface incidence angle (90° − AOI from normal)."""
+        sun_states = self._sun_states()
+        if sun_states is None:
+            return None
+
+        sun_elevation, _sun_azimuth = sun_states
+        if sun_elevation <= 0:
+            return None
+
         aoi = self._aoi_normal_deg()
         if aoi is None:
             return None

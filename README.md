@@ -44,7 +44,7 @@ Settings can be updated later via **Configure** on the integration entry.
 
 | Entity | Unit | Description |
 | --- | --- | --- |
-| Incidence angle | ° | Angle between sunlight and the panel surface |
+| Incidence angle | ° | Angle between the sun ray and the panel surface (0° = grazing, 90° = perpendicular) |
 | Absolute irradiation | W/m² | Effective plane-of-array irradiance implied by measured power |
 | Relative irradiation | % | Measured power vs rated power scaled by beam+diffuse geometry |
 
@@ -55,7 +55,9 @@ Settings can be updated later via **Configure** on the integration entry.
 
 `cos θ` is the sun-to-panel-normal geometry factor. `k_d` approximates diffuse sky contribution so morning values stay bounded when beam geometry is near zero; at midday (`cos θ = 1`) the comparison is still against full `P_rated`.
 
-Both irradiation sensors are unavailable when the sun is behind the panel (`cos θ ≤ 0`) or required inputs are missing.
+- **Incidence angle:** `90° − acos(cos θ)` — the angle between the sun ray and the panel surface, not the panel normal.
+
+The incidence angle sensor is unavailable when the sun is below the horizon (elevation ≤ 0). Both irradiation sensors are unavailable when the sun is behind the panel (`cos θ ≤ 0`) or required inputs are missing.
 
 ## Requirements
 
