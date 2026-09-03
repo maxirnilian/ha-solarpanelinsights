@@ -41,10 +41,10 @@
         "name": "Incidence angle"
       },
       "absolute_irradiation": {
-        "name": "Absolute irradiation"
+        "name": "Absolute irradiance"
       },
       "relative_irradiation": {
-        "name": "Relative irradiation"
+        "name": "Relative irradiance (normalized)"
       }
     }
   }

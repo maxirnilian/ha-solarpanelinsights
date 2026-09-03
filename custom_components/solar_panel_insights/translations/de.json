@@ -41,10 +41,10 @@
         "name": "Einfallswinkel"
       },
       "absolute_irradiation": {
-        "name": "Absolute Einstrahlung"
+        "name": "Absolute Bestrahlungsstärke"
       },
       "relative_irradiation": {
-        "name": "Relative Einstrahlung"
+        "name": "Relative Bestrahlungsstärke (normalisiert)"
       }
     }
   }

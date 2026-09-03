@@ -1,3 +1,5 @@
+<img src="custom_components/solar_panel_insights/brand/icon.png" alt="Solar Panel Insights" width="40" height="40">
+
 # Solar Panel Insights
 
 Home Assistant custom integration that calculates detailed solar panel metrics using panel geometry, the built-in [sun](https://www.home-assistant.io/integrations/sun/) integration, and a linked power sensor.
